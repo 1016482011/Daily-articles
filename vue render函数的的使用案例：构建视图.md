@@ -1,4 +1,4 @@
-# vue render 函数的的使用案例：构建设计系统的排版布局
+# vue render 函数的的使用案例：构建系统视图
 
 原文章：[A Practical Use Case for Vue Render Functions: Building a Design System Typography Grid](https://css-tricks.com/a-practical-use-case-for-vue-render-functions-building-a-design-system-typography-grid/)
 
