@@ -1,4 +1,4 @@
-# 什么是语义化 HTML 标签以及如歌使用它们
+# 什么是语义化 HTML 标签以及如何使用它们
 
 原文章：[WHAT ARE SEMANTIC HTML TAGS AND HOW TO USE THEM](https://www.developerdrive.com/2019/03/what-are-semantic-html-tags/)
 
