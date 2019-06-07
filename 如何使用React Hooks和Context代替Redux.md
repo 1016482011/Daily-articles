@@ -65,3 +65,375 @@ import './index.css';
 ```
 
 这就是我们准备工作的全部内容了。下面让我们开始使用新的状态管理技术的第一个例子。
+
+## 计数的例子
+
+在这个例子里，我们设计一个由两个按钮和一个展示按钮组成的简单的例子。为了去展示全局状态，这个例子将由两个展示的组件组成。首先，我们徐亚定义我们的`context`对象，用来存放我们的状态。这个和 redux 里的 store 很类似。使用我们的 context 达到和 store 相同的目的需要给每个项目添加一些引用代码。幸运的是，有人已经给我们写好了一个自定义的钩子，这个钩子允许你只用一行代码创建你的 context 对象。只要安装`constate`库即可：
+
+```shell
+npm install constate
+```
+
+这个安装完成之后，你就可以开发了。我将在代码里写上注释来说明其功能。创建 context 对象文件`context/CounterContext.js`并且插入一下代码：
+
+```js
+import { useState } from 'react'
+import createUseContext from 'constate' // Context状态生成器
+
+// 第一步：创建一个包含状态和action的自定义钩子
+function useCounter() {
+  const [count, setCount] = useState(0)
+  const increment = () => setCount(prevCount => prevCount + 1)
+  const decrement = () => setCount(prevCount => prevCount - 1)
+  return { count, increment, decrement }
+}
+
+// 第二步：声明context状态对象，以便与其他组件共享状态
+export const useCounterContext = createUseContext(useCounter)
+```
+
+创建一个父组件`views/Counter.jsx`，插入如下代码：
+
+```js
+import React from 'react'
+import { Segment } from 'semantic-ui-react'
+
+import CounterDisplay from '../components/CounterDisplay'
+import CounterButtons from '../components/CounterButtons'
+import { useCounterContext } from '../context/CounterContext'
+
+export default function Counter() {
+  return (
+    // Step 3: Wrap the components you want to share state with using the context provider
+    // 第三步：使用context provider包装的想要共享组件
+    <useCounterContext.Provider>
+      <h3>Counter</h3>
+      <Segment textAlign="center">
+        <CounterDisplay />
+        <CounterButtons />
+      </Segment>
+    </useCounterContext.Provider>
+  )
+}
+```
+
+创建视图组件`components/CounterDisplay.jsx`，插入如下代码：
+
+```js
+import React from 'react'
+import { Statistic } from 'semantic-ui-react'
+import { useCounterContext } from '../context/CounterContext'
+
+export default function CounterDisplay() {
+  // 第四步：通过context；来使用共享状态
+  const { count } = useCounterContext()
+  return (
+    <Statistic>
+      <Statistic.Value>{count}</Statistic.Value>
+      <Statistic.Label>Counter</Statistic.Label>
+    </Statistic>
+  )
+}
+```
+
+创建视图组件 components/CounterButtons.jsx，插入如下代码：
+
+```js
+import React from 'react'
+import { Button } from 'semantic-ui-react'
+import { useCounterContext } from '../context/CounterContext'
+
+export default function CounterButtons() {
+  // 第四步：通过context；来使用共享状态
+  const { increment, decrement } = useCounterContext()
+  return (
+    <div>
+      <Button.Group>
+        <Button color="green" onClick={increment}>
+          Add
+        </Button>
+        <Button color="red" onClick={decrement}>
+          Minus
+        </Button>
+      </Button.Group>
+    </div>
+  )
+}
+```
+
+将`App.jsx`中的代码替换为：
+
+```js
+import React from 'react'
+import { Container } from 'semantic-ui-react'
+
+import Counter from './views/Counter'
+
+export default function App() {
+  return (
+    <Container>
+      <h1>React Hooks Context Demo</h1>
+      <Counter />
+    </Container>
+  )
+}
+```
+
+你在浏览器里将会得到如下页面。点击按钮来确认其工作是否正常：
+
+![155688124202-counter-demo](/img/ReplaceReduxWithContext/155688124202-counter-demo.png)
+
+希望这个例子对你能有所帮助-读完我代码里包含的代码后，让我们开始开始下一个章节，我将使用一个更高级一点的例子。
+
+## 联系人的例子
+
+在这个例子里，我将创建一个用来管理联系人的增删改查页面。其将会有两个视图组件和一个容器组件。还有一个 context 对象用来管理联系人状态。由于我们的状态数会比之前一个列子更加复杂一点，所以这里我们将使用`userReducer`钩子。
+
+创建 context 对象`context/ContactContext.js`，插入如下代码：
+
+```js
+import { useReducer } from 'react'
+import _ from 'lodash'
+import createUseContext from 'constate'
+
+// 定义我们应用的初始状态
+const initialState = {
+  contacts: [
+    {
+      id: '098',
+      name: 'Diana Prince',
+      email: 'diana@us.army.mil'
+    },
+    {
+      id: '099',
+      name: 'Bruce Wayne',
+      email: 'bruce@batmail.com'
+    },
+    {
+      id: '100',
+      name: 'Clark Kent',
+      email: 'clark@metropolitan.com'
+    }
+  ],
+  loading: false,
+  error: null
+}
+
+// 定义一个纯函数的reducer
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'ADD_CONTACT':
+      return {
+        contacts: [...state.contacts, action.payload]
+      }
+    case 'DEL_CONTACT':
+      return {
+        contacts: state.contacts.filter(contact => contact.id != action.payload)
+      }
+    case 'START':
+      return {
+        loading: true
+      }
+    case 'COMPLETE':
+      return {
+        loading: false
+      }
+    default:
+      throw new Error()
+  }
+}
+
+// 声明你的自定义钩子，包含状态、分发器和action
+const useContacts = () => {
+  const [state, dispatch] = useReducer(reducer, initialState)
+  const { contacts, loading } = state
+  const addContact = (name, email) => {
+    dispatch({
+      type: 'ADD_CONTACT',
+      payload: { id: _.uniqueId(10), name, email }
+    })
+  }
+  const delContact = id => {
+    dispatch({
+      type: 'DEL_CONTACT',
+      payload: id
+    })
+  }
+  return { contacts, loading, addContact, delContact }
+}
+
+// 导出你的自定义钩子
+export const useContactsContext = createUseContext(useContacts)
+```
+
+创建其父组件`views/Contacts.jsx`，插入如下代码：
+
+```js
+import React from 'react'
+import { Segment, Header } from 'semantic-ui-react'
+import ContactForm from '../components/ContactForm'
+import ContactTable from '../components/ContactTable'
+import { useContactsContext } from '../context/ContactContext'
+
+export default function Contacts() {
+  return (
+    // 将需要共享状态的组件包装起来
+    <useContactsContext.Provider>
+      <Segment basic>
+        <Header as="h3">Contacts</Header>
+        <ContactForm />
+        <ContactTable />
+      </Segment>
+    </useContactsContext.Provider>
+  )
+}
+```
+
+创建视图组件`components/ContactTable.jsx`,并且插入如下代码：
+
+js
+
+```js
+import React, { useState } from 'react'
+import { Segment, Table, Button, Icon } from 'semantic-ui-react'
+import { useContactsContext } from '../context/ContactContext'
+
+export default function ContactTable() {
+  // Subscribe to `contacts` state and access `delContact` action
+  const { contacts, delContact } = useContactsContext()
+  // Declare a local state to be used internally by this component
+  const [selectedId, setSelectedId] = useState()
+
+  const onRemoveUser = () => {
+    delContact(selectedId)
+    setSelectedId(null) // Clear selection
+  }
+
+  const rows = contacts.map(contact => (
+    <Table.Row
+      key={contact.id}
+      onClick={() => setSelectedId(contact.id)}
+      active={contact.id === selectedId}
+    >
+      <Table.Cell>{contact.id}</Table.Cell>
+      <Table.Cell>{contact.name}</Table.Cell>
+      <Table.Cell>{contact.email}</Table.Cell>
+    </Table.Row>
+  ))
+
+  return (
+    <Segment>
+      <Table celled striped selectable>
+        <Table.Header>
+          <Table.Row>
+            <Table.HeaderCell>Id</Table.HeaderCell>
+            <Table.HeaderCell>Name</Table.HeaderCell>
+            <Table.HeaderCell>Email</Table.HeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>{rows}</Table.Body>
+        <Table.Footer fullWidth>
+          <Table.Row>
+            <Table.HeaderCell />
+            <Table.HeaderCell colSpan="4">
+              <Button
+                floated="right"
+                icon
+                labelPosition="left"
+                color="red"
+                size="small"
+                disabled={!selectedId}
+                onClick={onRemoveUser}
+              >
+                <Icon name="trash" /> Remove User
+              </Button>
+            </Table.HeaderCell>
+          </Table.Row>
+        </Table.Footer>
+      </Table>
+    </Segment>
+  )
+}
+```
+
+创建视图组件`components/ContactForm.jsx`，并且插入这段代码：
+
+```js
+import React, { useState } from 'react'
+import { Segment, Form, Input, Button } from 'semantic-ui-react'
+import { useContactsContext } from '../context/ContactContext'
+
+export default function ContactForm() {
+  const name = useFormInput('')
+  const email = useFormInput('')
+  // Consume the context store to access the `addContact` action
+  const { addContact } = useContactsContext()
+
+  const onSubmit = () => {
+    addContact(name.value, email.value)
+    // Reset Form
+    name.onReset()
+    email.onReset()
+  }
+
+  return (
+    <Segment basic>
+      <Form onSubmit={onSubmit}>
+        <Form.Group widths="3">
+          <Form.Field width={6}>
+            <Input placeholder="Enter Name" {...name} required />
+          </Form.Field>
+          <Form.Field width={6}>
+            <Input placeholder="Enter Email" {...email} type="email" required />
+          </Form.Field>
+          <Form.Field width={4}>
+            <Button fluid primary>
+              New Contact
+            </Button>
+          </Form.Field>
+        </Form.Group>
+      </Form>
+    </Segment>
+  )
+}
+
+function useFormInput(initialValue) {
+  const [value, setValue] = useState(initialValue)
+
+  function handleChange(e) {
+    setValue(e.target.value)
+  }
+
+  function handleReset() {
+    setValue('')
+  }
+
+  return {
+    value,
+    onChange: handleChange,
+    onReset: handleReset
+  }
+}
+```
+
+相应的在`App.jsx`中插入如下代码:
+
+```js
+import Contacts from './views/Contacts'
+//...
+;<Container>
+  <h1>React Hooks Context Demo</h1>
+  {/* <Counter /> */}
+  <Contacts />
+</Container>
+```
+
+实现完这段代码之后，刷新你的浏览器。删除一个联系人，你需要选择一行然后点击删除按钮。创建一个联系人，只需要填写表单，然后点击新增按钮即可。
+
+![155688124403-contacts-example](/img/ReplaceReduxWithContext/155688124403-contacts-example.png)
+
+复习一下代码，确保你理解了这里面的所有东西。仔细阅读代码里的注释。
+
+## 总结
+
+现在你唯一需要问自己的问题是:redux 对于你未来的项目是否是必要的？如上这种技术的一个缺点是不能使用 Redux DevTool 插件调试应用程序状态。不过，这个在未来可能将会有所改善，我们可以开发一个新的工具来调试。显然作为一个开发者，你仍然需要学习 Redux，以便管理以前的项目。如果你开始了一个新的项目，你需要询问你和你同事，在你们的项目中是否有必要使用状态库。
