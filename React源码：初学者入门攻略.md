@@ -17,3 +17,51 @@
 ## 深入代码
 
 ### package.json
+
+当我第一次全身投入到一个库的研究时，我通常从[package.json](https://docs.npmjs.com/files/package.json)，这个文件通常位于项目的根目录下。`package.json`里的[main 字段](https://docs.npmjs.com/files/package.json#main)指向项目的入口，并且返回你的项目的主模块的导出对象。换句话说，当一个模块需要被`required in`时，这个就是那个`API`导入的入口。然而，当我们查看 react 根目下的`package.josn`时，我们发现`main`这个字段很奇怪的不见了。我们可以从 React 的基础介绍中了解到为什么会这样，[详情点击这里](https://reactjs.org/docs/codebase-overview.html#multiple-packages)。从这段描述中可以得到两样重要的事情，第一就是 React 在 github 上的分支是一个`monorepo`(react 和他所有相关的项目都放在同一个分支下)，第二个是，像`package.josn`
+文件这种 npm 的元数据放在顶级文件夹[packages](https://github.com/facebook/react/tree/master/packages)下。
+
+很好，这个`package`文件夹可能值得接下来去探索。在继续前进之前你可能好奇为什么`package.json`存在于根目录下，如果他没有提供入口点的话。这个 package 的依赖都是开发依赖(换句话说，没有直接相关性)。进一步讲，这个 npm 里`scripts`字段里的脚本都是开发脚本，用来使用一些有用的命令行工具像`npm run build`、`npm t`、`npm run flow`等等。因此，假设这个`package.json`是用来设置开发环境是完全合理的。
+
+现在我们进入到项目根目录下的`package`文件夹下。我们现在对 react 核心代码感兴趣，因此我们导航到[react/packages/react/package.json](https://github.com/facebook/react/blob/master/packages/react/package.json)。你应该注意到这个`package.json`包含一个指向`idnex.js`的`main`字段，还有一些很少的依赖。如果我们导航到[react.js](https://github.com/facebook/react/blob/master/packages/react/index.js)，我们可能会惊讶的发现如下内容：
+
+```js
+'use strict'
+
+module.exports = require('./lib/React')
+```
+
+就是这样-只有 3 行代码，其中一行是`use strict`，其他的似乎是在导出一个不存在的文件里的一个不存在的文件，同样的，这个神秘文件可以在代码概述中找到答案：
+
+> 当我们为 npm 编译 React 时，脚本将所有模块复制到一个叫做`lib`的平级目录中，并在所有`require()`路径前加上`./`。
+
+## 一条关于 Haste 小插曲
+
+打开页面到[https://unpkg.com/react@15.4.1/lib/](https://unpkg.com/react@15.4.1/lib/)，我们可以看到那里确实有个叫做`React.js`的文件，但是这些文件的源文件在哪呢？这个答案在 Facebook 的文件定制系统里，Haste。Haste 致力服务于大代码量的项目，可以在不用担心指定新的相对路径的情况下将项目里的文件移动到不同的位置。Haste 和`common.js`最关键的不同点在于，Haste 要求项目所有的文件名必须全局唯一。当一个新文件在 Facebook 中被创建时，Facebook 会要求文件包含一个许可证头。在开头会有一行类似`* @providesModule React`文字，而`@providesModule`之后的文字应当和新建的文件名一致。所以，这种情况下`@providesModule React`导入的是 react 模块。以上就是如何在 Haste 中创建模块。
+
+## React.js
+
+在全局有一个唯一的文件名使得在 GitHub 和大多数文本编辑器上找文件变的难以置信的简单。在 React GitHub 分支上的任何一个地方按`t`，你可以输入`react.js`来搜索 react 核心模块。事实上，我在`src/isomorphic`下找到了名为`React.js`的文件。
+
+![1_hk4L2L_fB0ML4CZW1cOvtw](/img/ReactCore/1_hk4L2L_fB0ML4CZW1cOvtw.png)
+
+打开`src/isomorphic/React.js`我们终于看到不止 3 行代码的 JavaScript 文件了。
+
+## 核心模块
+
+### React.js(内容)
+
+```js
+/**
+ * Copyright 2013-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ * @providesModule React
+ */
+```
+
+1-10 行：正如我之前所提到的，每一个源码文件都引入了一个许可头。
