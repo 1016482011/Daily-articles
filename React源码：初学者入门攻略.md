@@ -64,4 +64,43 @@ module.exports = require('./lib/React')
  */
 ```
 
-1-10 行：正如我之前所提到的，每一个源码文件都引入了一个许可头。
+1-10 行：正如我之前所提到的，每一个源码文件都引入了一个许可头。这些代码所包含的许可信息中的第九行被 Haste 用作模块的唯一标识。
+
+```js
+var ReactChildren = require('ReactChildren')
+var ReactComponent = require('ReactComponent')
+var ReactPureComponent = require('ReactPureComponent')
+var ReactClass = require('ReactClass')
+var ReactDOMFactories = require('ReactDOMFactories')
+var ReactElement = require('ReactElement')
+var ReactPropTypes = require('ReactPropTypes')
+var ReactVersion = require('ReactVersion')
+```
+
+14-21 行：这些代码通过 Haste 导入了`React.js`的模块依赖。在这里导入的依赖最终帮助组成 React 的顶级公共 API。我们稍后再来研究他们的代码。
+
+```js
+var onlyChild = require('onlyChild')
+var warning = require('warning')
+```
+
+23-24 行：这段代码还需要引入两个模块，虽然这两个模块不是顶级 API 的组成部分，但是在`React.js`本身中会使用到。其中一个警告模块比较有趣：如果你在分支中搜索它，你可能会惊讶的发现这个模块并在 react 分支中并不存在。相反，他在 Facebook 的`fbjs`分支中，[也就是在这](https://github.com/facebook/fbjs/blob/master/packages/fbjs/src/__forks__/warning.js)，这个模块在 React 的`package.json`被作为一个依赖引入了进来。如果你对其好奇，可以从[这](https://www.npmjs.com/package/fbjs)了解到为什么它在另一个分支上。
+
+```js
+var createElement = ReactElement.createElement
+var createFactory = ReactElement.createFactory
+var cloneElement = ReactElement.cloneElement
+```
+
+26-28 行：这段代码我认为有两个目的。1)他声明了一些实用的变量，这些变量更直观并且比直接从`ReactElement`对象中引用更加简洁。2)新创建的变量可以安全地在开发环境中重新赋值，无需担心复写了其模块的函数。
+
+```js
+if (__DEV__) {
+  var ReactElementValidator = require('ReactElementValidator')
+  createElement = ReactElementValidator.createElement
+  createFactory = ReactElementValidator.createFactory
+  cloneElement = ReactElementValidator.cloneElement
+}
+```
+
+30-35 行：有一个约定在 react 源码中频繁使用，那就是`__DEV__`全局变量。你可以从[这里](https://facebook.github.io/react/contributing/codebase-overview.html#development-and-production)得到跟多了解。不过他的基本理念就是，确保这段代码只在开发环境中，换句话说，在这里创建的这块代码只会在开发环境中执行，在生产环境中不会被执行。在本例中，如果 React 文件在开发环境中执行，则需要使用 ReactElementValidator 中的 ReactElementValidator 覆盖第 26-28 行的那三个变量。
