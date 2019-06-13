@@ -104,3 +104,43 @@ if (__DEV__) {
 ```
 
 30-35 行：有一个约定在 react 源码中频繁使用，那就是`__DEV__`全局变量。你可以从[这里](https://facebook.github.io/react/contributing/codebase-overview.html#development-and-production)得到跟多了解。不过他的基本理念就是，确保这段代码只在开发环境中，换句话说，在这里创建的这块代码只会在开发环境中执行，在生产环境中不会被执行。在本例中，如果 React 文件在开发环境中执行，则需要使用 ReactElementValidator 中的 ReactElementValidator 覆盖第 26-28 行的那三个变量。
+
+```js
+var __spread = Object.assign
+```
+
+37 行：这一行第一眼看上去似乎没什么存在的必要，他的目的只有通过仔细观察才能发现。在 JavaScript 中函数是第一公民并且可以直接赋值给变量。这里的`__spread`只是一个简单的变量，保存着和`Object.assign`一样的函数引用，你可以通过[这里](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign)进行了解。这个非常重要，待会我们就会看到，`React.__spread`已经被弃用，而这个变量可以确保他现在指向和`Object.assign`一样的函数。如果只是这一行看起来仍然充满神秘的感觉，可以尝试在一个代码解释器中运行下段代码，并且想象一下最终的输出结果：
+
+```js
+// __spread
+var __spread = Object.assign
+
+var animal = { type: 'dog' }
+var whichAnimal = { name: 'Rufus' }
+
+var newAnimal = __spread({}, animal, whichAnimal)
+
+console.log(animal) // { type: 'dog' }
+console.log(whichAnimal) // { name: 'Rufus' }
+console.log(newAnimal) // { type: 'dog', name: 'Rufus' }
+```
+
+```js
+// React.js: 39–52 行
+if (__DEV__) {
+  var warned = false
+  __spread = function() {
+    warning(
+      warned,
+      'React.__spread is deprecated and should not be used. Use ' +
+        'Object.assign directly or another helper function with similar ' +
+        'semantics. You may be seeing this warning due to your compiler. ' +
+        'See https://fb.me/react-spread-deprecation for more details.'
+    )
+    warned = true
+    return Object.assign.apply(null, arguments)
+  }
+}
+```
+
+39-52 行：我们再一次遇到这个`if`只在`__DEV__`环境下执行的语句块了。这是 React 在生产环境中屏蔽开发模式下代码的方法。很明显的是，这个方法很依赖早些时候导入的`warning`函数。因此，为了理解这段代码的意图我们首先要理解[warning.js](https://github.com/facebook/fbjs/blob/master/packages/fbjs/src/__forks__/warning.js)
