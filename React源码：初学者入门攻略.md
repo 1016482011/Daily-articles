@@ -144,3 +144,58 @@ if (__DEV__) {
 ```
 
 39-52 行：我们再一次遇到这个`if`只在`__DEV__`环境下执行的语句块了。这是 React 在生产环境中屏蔽开发模式下代码的方法。很明显的是，这个方法很依赖早些时候导入的`warning`函数。因此，为了理解这段代码的意图我们首先要理解[warning.js](https://github.com/facebook/fbjs/blob/master/packages/fbjs/src/__forks__/warning.js)
+
+## warning.js
+
+为了全面起见我决定包含这一章，因为他的功能在 React 中得到了充分的使用。不过，这个模块的标题代表了其含义，并且代码也相对简单，如果你愿意，你可以跳过这一章。
+
+`warning`模块开始于从[emptyFunction.js](https://github.com/facebook/fbjs/blob/master/packages/fbjs/src/core/emptyFunction.js)中引入了一个空的函数。警告模块中最终被使用的代码位于[24 行](https://github.com/facebook/fbjs/blob/master/packages/fbjs/src/core/emptyFunction.js#L24)，代码如下：
+
+```js
+const emptyFunction = (...args: Array<any>) => void = function() {}
+```
+
+如果我们去掉类型定义，这个函数还剩下：
+
+```js
+const emptyFunction = (...args) => function() {}
+```
+
+这是一种将函数与他的的参数分离的惯用手法，然后简单的返回一个匿名函数。这一步非常重要，因为我们不想在非开发环境下执行是报出警告。然而，如果我们知道程序是在开发环境下执行时。`warning`将会被 40 行的变量覆盖：
+
+```js
+warning = function(condition, format, ...args) {
+  if (format === undefined) {
+    throw new Error(
+      '`warning(condition, format, ...args)` requires a warning ' +
+        'message argument'
+    )
+  }
+  if (!condition) {
+    printWarning(format, ...args)
+  }
+}
+```
+
+这个`warning`函数的最终目的通过结构化的数据来传达错误信息。它接受`condition`、`format`和`...args`作为它的参数。接下来第 40 行，这个警告函数将检查是否存在`format`参数，也就是错误信息被定义的地方。如果这个参数不存在，将会报出一个异常，“`warning(condition, format, …args)` requires a warning message argument”。接着`condition`参数将会被执行，如果不存在，将会在 26 行调用`printWarning`。`printWarning`将会检查`console`是否存在，如果存在。它将会调用`console.error`打印出消息。否则，他将执行`throw new Error(message)`，最终，`warning`被导出。
+
+## 返回 React.js
+
+```js
+if (__DEV__) {
+  var warned = false
+  __spread = function() {
+    warning(
+      warned,
+      'React.__spread is deprecated and should not be used. Use ' +
+        'Object.assign directly or another helper function with similar ' +
+        'semantics. You may be seeing this warning due to your compiler. ' +
+        'See https://fb.me/react-spread-deprecation for more details.'
+    )
+    warned = true
+    return Object.assign.apply(null, arguments)
+  }
+}
+```
+
+在理解了`warning.js`是什么、为什么以及如何用之后，我们可以继续逐步了解代码。代表着`React.js`中最常见的模式从第 40 行开始，一个名为`warned`的变量被设置为`false`。接着下一行，`__spread`被重新赋值给了一个新的函数
