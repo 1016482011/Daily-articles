@@ -272,3 +272,39 @@ isValidElement: ReactElement.isValidElement,
 ```
 
 75-90 行：这些是 Reat 顶级类接口定义的地方，我不打算花过多的是在这些上面，但是他们当中有一些还是值得你们自己去研究的。
+
+```js
+PropTypes: ReactPropTypes,
+createClass: ReactClass.createClass,
+createFactory: createFactory,
+createMixin: function(mixin) {
+  // Currently a noop. Will be used to validate and trace mixins.
+  return mixin;
+},
+```
+
+75-81 行：`React.PropTypes`, `React.createClass`,`React.createFactory`, 和`React.createMixin`作为公共 API 被定义导出的地方。
+
+```js
+DOM: ReactDOMFactories,
+```
+
+85 行：这一行定义了`React.DOM`，有趣的是这个并不是特定于`DOM`的，而是返回一系列`DOM`字符串的助手函数。
+
+```js
+version: ReactVersion,
+```
+
+87 行：定义了`React.version`，包含了当前 React 的版本。
+
+```js
+__spread: __spread,
+```
+
+90 行：定义了`React.__spread`，再一次强调一下这个方法以及被弃用了，应该避免使用它。当需要是使用`Object.assign`。
+
+```js
+module.exports = React
+```
+
+93 行：最终，在`React.js`的最后一行 React 模块被导出。
