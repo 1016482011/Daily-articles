@@ -198,4 +198,77 @@ if (__DEV__) {
 }
 ```
 
-在理解了`warning.js`是什么、为什么以及如何用之后，我们可以继续逐步了解代码。代表着`React.js`中最常见的模式从第 40 行开始，一个名为`warned`的变量被设置为`false`。接着下一行，`__spread`被重新赋值给了一个新的函数
+在理解了`warning.js`是什么、为什么以及如何用之后，我们可以继续逐步了解代码。代表着`React.js`中最常见的模式从第 40 行开始，一个名为`warned`的变量被设置为`false`。接着下一行，`__spread`被重新赋值给了一个新的函数，这个函数引用了`warning`
+，并通过传递`warnedcam`作为消息参数。这个可以确保生产环境下的`React._spread`重命名为`Object.assign`，当在`__DEV__`环境下引用`React.__spread`将会警告用户`__spread`现在已经被弃用了，应该避免使用。接下来，`warned`被设置为`true`，这样当引用`React.__spread`时，`warning`只有在第一次打印抛出错误信息。最后，`Object.assign`调用参数`arguments`并作为最终结果返回。这段代码含义：`React.__spread`应该被避免使用，相反，在这里我们应该使用`Object.assign`。
+
+```js
+var React = {
+
+  // Modern
+
+  Children: {
+    map: ReactChildren.map,
+    forEach: ReactChildren.forEach,
+    count: ReactChildren.count,
+    toArray: ReactChildren.toArray,
+    only: onlyChild,
+  },
+
+  Component: ReactComponent,
+  PureComponent: ReactPureComponent,
+
+  createElement: createElement,
+  cloneElement: cloneElement,
+  isValidElement: ReactElement.isValidElement,
+```
+
+54-71 行：这里就是 React 顶级公共 api 定义的地方。例如，`React.Component`和`React.PureComponent`在这里被分别导出为`Component: ReactComponent`和`PureComponent: ReactPureComponent`：
+
+```js
+Children: {
+  map: ReactChildren.map,
+  forEach: ReactChildren.forEach,
+  count: ReactChildren.count,
+  toArray: ReactChildren.toArray,
+  only: onlyChild,
+},
+```
+
+58-64 行：这里是`React.Children`API 定义的地方，其包含以下几种方法：`map`、`forEach`、`count`、`toArray`和`only`
+
+```js
+Component: ReactComponent,
+PureComponent: ReactPureComponent,
+```
+
+66-67 行：定义了`React.Component`和`React.PureComponent`API
+
+```js
+createElement: createElement,
+cloneElement: cloneElement,
+isValidElement: ReactElement.isValidElement,
+```
+
+69-71 行：这里定义了`React.createElement`、`React.cloneElement`和`React.isValidElement`
+
+```js
+  PropTypes: ReactPropTypes,
+  createClass: ReactClass.createClass,
+  createFactory: createFactory,
+  createMixin: function(mixin) {
+    // Currently a noop. Will be used to validate and trace mixins.
+    return mixin;
+  },
+
+  // This looks DOM specific but these are actually isomorphic helpers
+  // since they are just generating DOM strings.
+  DOM: ReactDOMFactories,
+
+  version: ReactVersion,
+
+  // Deprecated hook for JSX spread, don't use this for anything.
+  __spread: __spread,
+};
+```
+
+75-90 行：这些是 Reat 顶级类接口定义的地方，我不打算花过多的是在这些上面，但是他们当中有一些还是值得你们自己去研究的。
