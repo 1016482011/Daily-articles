@@ -308,3 +308,19 @@ module.exports = React
 ```
 
 93 行：最终，在`React.js`的最后一行 React 模块被导出。
+
+## 更深层次的研究
+
+现在我们定义了 React 的公共 API。此处，可研究的方向有很多。我们可以探索`React.PureComponent`, `React.Component`, 或者 `React.Children`，但是我决定遵循由浅入深的路线，优先考虑探索基础简单的模块，因此，我们从最直接的模块开始，`React.Children.onlyChild`,然后是`React.Component`和`React.PureComponent`模块。最终回到复杂的`React.Children`部分。
+
+### `React.Children.onlyChild`模块
+
+`onlyChild`是一个由(react/src/isomorphic/children/onlyChild.js)[https://medium.com/@ericchurchill/the-react-source-code-a-beginners-walkthrough-i-7240e86f3030]导出的单独函数。这个模块只需要两个其他依赖。`invariant`和`ReactElement`。`invariant`模块的功能和`warning`模块非常相似，即我们之前提到的，只要 if 条件执行结果不为真，就会报出一个异常。而`invariant`异常的不同点在于，在`__DEV__`和生产环境下都会被执行，其他模块，`ReactElement`，位于[react/src/isomorphic/classic/element/ReactElement.js](https://github.com/facebook/react/blob/master/src/isomorphic/classic/element/ReactElement.js)，由 386 行代码组成。不过，本着`React.Children.onlyChild`为主，我们只看一下 372-384 行。理解`ReactElement.isValidElement`最重要的东西在于，它接受一个 React 组件并且验证他是否真的是一个 React 组件，通过如下方式：
+
+```js
+typeof object === 'object' &&
+  object !== null &&
+  object.$$typeof === REACT_ELEMENT_TYPE
+```
+
+他首先会检查组件的类型，来确定它是否一个对象并且不为 null，此组件还有一个被设置为`REACT_ELEMENT_TYPE`的名为`$$typeof`的属性。因此，如果`onlyChild`中传递的不是一个有效的 React 组件，它将会抛出一个固定的错误异常，否则，它将会返回这个组件。
