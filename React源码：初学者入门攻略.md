@@ -324,3 +324,25 @@ typeof object === 'object' &&
 ```
 
 他首先会检查组件的类型，来确定它是否一个对象并且不为 null，此组件还有一个被设置为`REACT_ELEMENT_TYPE`的名为`$$typeof`的属性。因此，如果`onlyChild`中传递的不是一个有效的 React 组件，它将会抛出一个固定的错误异常，否则，它将会返回这个组件。
+
+如果可以的话我想说一下测试，因为我坚信我们可以通过模块的测试可以收获很多。这里我将花一点时间讲一下`React.Children.onlyChild`的测试部分。
+
+### React 中测试的说明
+
+React 中的测试是由 Facebook 的 Jest 测试框架完成的。一个文件的测试代码通常可以凭知觉猜到其大致位置。他们都在一个叫做`__tests__`的文件夹下，他保存着同一文件夹下的所有测试套件。例如，因为`onlyChild`模块位于`src/isomorphic/children`文件夹下，他的测试文件可以在`src/isomorphic/children/__tests__`文件夹下找到。这使得查找文件的测试变得更有条理并且移动文件更简单。
+
+### 回到 onlyChild
+
+既然我们知道了`onlyChild`的测试文件的所在位置，我们可以通过阅读测试部分来更好地理解`onlycChild`的代码。我们继续打开到`src/isomorphic/children/__tests__/onlyChild-test.js`，我不会在这里花太多时间来执行这些测试。不过每一项通过的测试都揭示了`onlyChild`是如何以及为什么而被使用的。通过测试我们可以很快的了解到`onlyChild`：
+
+- 传入两个`children`时将会失败
+- 传入空值将会失败
+- 传入键值对对象将会失败
+- 传入一个`children`时不会失败
+- 应该只返回一个子元素
+
+只需瞥一眼 onlyChild 的测试组件，就可以在几秒钟内获取到所有这些信息。
+
+## React.Component
+
+接下来，我想找一个点来读完`React.Component`。不用担心，我待会将返回去查看`React.Children`剩余部分的代码。
