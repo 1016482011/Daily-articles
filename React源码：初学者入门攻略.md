@@ -345,4 +345,69 @@ React 中的测试是由 Facebook 的 Jest 测试框架完成的。一个文件�
 
 ## React.Component
 
-接下来，我想找一个点来读完`React.Component`。不用担心，我待会将返回去查看`React.Children`剩余部分的代码。
+接下来，我想找一个点来读完`React.Component`。不用担心，我待会将返回去查看`React.Children`剩余部分的代码。我们从`React.Component`而不是从`React.PureComponent`入手，是因为`React.PureComponent`是建立在`React.Component`基础之上的。所以了解前者有利于对后者的理解。
+
+`React.Component`可以在项目文件夹下的`react/src/isomorphic/modern/class/ReactComponent.js`下找到。我们可以跳过许可头部，因为他们的格式在整个分支下都是不变的：
+
+```js
+var ReactNoopUpdateQueue = require('ReactNoopUpdateQueue')
+```
+
+14 行：引入了`ReactNoopUpdateQueue`模块，这个模块本质上是一个当 react 组件的更新参数不存在时的一个替代品。它的功能非常简单，其主要功能主要是用来警告用户不要更新卸载的组件。
+
+```js
+var canDefineProperty = require('canDefineProperty')
+var emptyObject = require('emptyObject')
+var invariant = require('invariant')
+var warning = require('warning')
+```
+
+16-19 行：这些是来自`fbjs`分支下实用函数。`invariant`和`warning`再一次被引入进来，同时还有一个叫做`emptyObject`的模块，这个模块创建了一个在开发环境中被`Object.freeze`冻结空对象，并最终被导出。
+
+### canDefineProperty 模块
+
+最后一个在被引用的是来自`react/src/shared/utils/canDefineProperty.js`的`canDefineProperty`模块。这是一个非常有趣的模块，其利用了`Object.defineProperty`方法。如果你对`Object.definedProperty`不熟悉，[MDN 文档](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty)有很好的解释。
+
+由`Object.defineProperty`创建的属性都是默认不可变和枚举的。如果我们查看 react 分支中的`canDefineProperty.js`模块，我们可以了解到其如何使用。
+
+```js
+var canDefineProperty = false
+if (__DEV__) {
+  try {
+    // $FlowFixMe https://github.com/facebook/flow/issues/285
+    Object.defineProperty({}, 'x', { get: function() {} })
+    canDefineProperty = true
+  } catch (x) {
+    // IE will fail on defineProperty
+  }
+}
+```
+
+15-24 行：一个叫做`canDefineProperty`标识被声明，并且默认为布尔值`false`。接着，如果 react 在`__DEV__`中执行，它将会尝试对一个空对象调用`Object.defineProperty`。你可能想知道，如果我们没有对这个空对象做任何事，那为什么需要这一步。如果我们查看`try`对应的`catch`条件，我们将看到一行注释表明，在 IE 下`Object.canDefineProperty`将会失效。这也就意味着 19 将会引起一个异常，在`canDefineProperty`被设置为`true`之前，这个异常将会先被`catch`抓到。最终`canDefineProperty`被导出
+
+### 回到 ReactComponent.js
+
+既然我们知道了`canDefineProperty`导出了什么，让我们回到`ReactComponent.js`。
+
+```js
+function ReactComponent(props, context, updater) {
+  this.props = props
+  this.context = context
+  this.refs = emptyObject
+  // We initialize the default updater but the real one gets injected by the
+  // renderer.
+  this.updater = updater || ReactNoopUpdateQueue
+}
+```
+
+24-31 行：这些行定义了基类，而这些类被拓展成了 react 组件！24 行的函数是一个构造函数伪类，其创造了 React 组件的实体。正如我们所看到的。这里通过在运行是传递的参数设置了组件的`props`、`context`和`updater`，如果`updater`没有指定，它将被设置为之前引入的`ReactNoopUpdateQueue`模块。而`refs`被设置为一个空对象，由[这里](https://github.com/facebook/fbjs/blob/master/packages/fbjs/src/core/emptyObject.js)导出。
+
+我们可以像这样调用：
+
+```js
+class button extends React.Component {
+  // some code
+  // ..
+  // ..
+}
+```
