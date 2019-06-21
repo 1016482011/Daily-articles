@@ -411,3 +411,71 @@ class button extends React.Component {
   // ..
 }
 ```
+
+这就是实际使用中被拓展的函数！
+
+```js
+ReactComponent.prototype.isReactComponent = {}
+```
+
+33 行：设置了在`ReactCompoent`中设置了`isReactComponent`属性，并且分配了一个空对象给它。
+
+```js
+ReactComponent.prototype.setState = function(partialState, callback) {
+  invariant(
+    typeof partialState === 'object' ||
+      typeof partialState === 'function' ||
+      partialState == null,
+    'setState(...): takes an object of state variables to update or a ' +
+      'function which returns an object of state variables.'
+  )
+  this.updater.enqueueSetState(this, partialState, callback, 'setState')
+}
+```
+
+60-69 行：上述代码在`ReactComponent.prototype`中定义了`setState`方法。`setState`做的第一件事就是防止`partialState`既不是对象，也不是函数和 null。回想一下，`partialState`不仅仅代表着需要被合并到状态中的信息，还有如何合并它。如果`partialState`不是上面三种中的任何一个，它将引起一个异常。否则他将通过`enqueueSetState`方法将新的状态传递给 react reconciler 。
+
+```js
+ReactComponent.prototype.forceUpdate = function(callback) {
+  this.updater.enqueueForceUpdate(this, callback, 'forceUpdate')
+}
+```
+
+85-87 行：这些代码在`ReactComponent.prototype`上定义了`forceUpdate`方法，这个函数仅仅就是告诉 reconciler ，有一些东西发生了变化，应该通过调用 enqueueForceUpdate 来更新状态。回想一下，updater 是在运行时注入的，默认的 updater 属性可能没有 enqueueForceUpdate!
+
+```js
+if (__DEV__) {
+  var deprecatedAPIs = {
+    isMounted: [
+      'isMounted',
+      'Instead, make sure to clean up subscriptions and pending requests in ' +
+        'componentWillUnmount to prevent memory leaks.'
+    ],
+    replaceState: [
+      'replaceState',
+      'Refactor your code to use setState instead (see ' +
+        'https://github.com/facebook/react/issues/3236).'
+    ]
+  }
+  var defineDeprecationWarning = function(methodName, info) {
+    if (canDefineProperty) {
+      Object.defineProperty(ReactComponent.prototype, methodName, {
+        get: function() {
+          warning(
+            false,
+            '%s(...) is deprecated in plain JavaScript React classes. %s',
+            info[0],
+            info[1]
+          )
+          return undefined
+        }
+      })
+    }
+  }
+  for (var fnName in deprecatedAPIs) {
+    if (deprecatedAPIs.hasOwnProperty(fnName)) {
+      defineDeprecationWarning(fnName, deprecatedAPIs[fnName])
+    }
+  }
+}
+```
