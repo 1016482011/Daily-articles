@@ -517,3 +517,34 @@ ReactPureComponent.prototype.constructor = ReactPureComponent
 Object.assign(ReactPureComponent.prototype, ReactComponent.prototype)
 ReactPureComponent.prototype.isPureReactComponent = true
 ```
+
+32-37 行：这些代码第一眼看上去可能有点陌生，尤其如果你不熟悉 JavaScript 的原型代理的话。如果你想了解更多关于原型链继承相关知识的话，MDN 有一篇极佳的文章，可以在[这里](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain)进行阅读。这里有一些像`ComponentDummy`这样的间接的伪类组件，我将尽我所能来分解他们。`ComponentDummy`的构造函数在 32 行定义，并且给`ComponentDummy.prototype`实例化了一个空对象。接着，在第 33 行`ComponentDummy`的原型被`ReactComponent`的原型覆盖。然后，`ReactPureComponent`的原型被`ComponentDummy`实例替代，也就是那个值为空，其`__proto__`指向`ReactComponent`的原型的函数。这步操作允许定义在`ReactComponent.prototype`之上的行为直接委托给`ReactPureComponent.prototype`。如果这个无法理解的话，看一下如下代码片段并且尝试理解其中发生了什么。
+
+```js
+function ReactComponent() {
+  console.log('I am a ReactComponent!')
+}
+
+ReactComponent.prototype.ReactComponentMethod = function() {
+  console.log('This is a method on the ReactComponent.prototype')
+}
+
+function ReactPureComponent() {
+  console.log('I am a ReactPureComponent!')
+}
+
+function ComponentDummy() {}
+
+ComponentDummy.prototype = ReactComponent.prototype
+ReactPureComponent.prototype = new ComponentDummy()
+ReactPureComponent.prototype.constructor = ReactPureComponent
+
+ComponentDummy.prototype.constructor() // I am a ReactComponent!
+ReactComponent.prototype.constructor() // I am a ReactComponent!
+ReactPureComponent.prototype.constructor() // I am a ReactPureComponent!
+
+const newPureComp = new ReactPureComponent() // I am a ReactPureComponent!
+newPureComp.ReactComponentMethod() // This is a method on the ReactComponent.prototype
+```
+
+接下来，`ReactPureComponent`的原型构造函数属性在 35 行被重新赋值。这是很有必要的，因为在之前其构造函数被新的`ComponentDummy`实例覆盖了。
