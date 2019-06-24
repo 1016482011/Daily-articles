@@ -479,3 +479,41 @@ if (__DEV__) {
   }
 }
 ```
+
+94-127 行：上述代码被在开发环境中用来警告开发者不要使用计划弃用的 API。具体的说，如果一个开发者使用了`deprecatedAPIs`对象中的`isMounted`或者`replaceState`，将会引发一个警告。107 行的`defineDeprecationWarining`体现了前面引入`canDefineProperty`模块的必要性。他将被废弃的模块作为不可枚举属性添加到`ReactComponent.prototype`中，他们在被访问之前是不可见的。这里被弃用的接口被“隐藏”。如果它们被调用，他们的 `getters`方法将会被调用，最终在 122 行的`for ...in`循环将会添加这些被弃用的接口到`ReactComponent.prototype`当中。有趣的是，在未来被弃用的接口可以直接添加到 95 行的`deprecatedAPIs`对象当中，当在`__DEV__`环境中被调用时将会引发一个适当的警告。
+
+```js
+module.exports = ReactComponent
+```
+
+129 行：`ReactComponent`被导出
+
+这就是`ReactComponent`模块中的 API 了。既然我们已经讨论了`ReactComponent`模块，我们可以研究下继承与`ReactComponent`的`ReactPureComponent`。
+
+### ReactPureComponent
+
+实际上，`ReactComponent`模块在第 14 行被引入到`ReactPureComponent`模块当中。同时还有`ReactNoopUpdateQueue`和`emptyObject`模块-这两个都是`ReactComponent`所依赖的模块。我们可以跳过这些代码，因为他们的作用前面已经讲过了。
+
+```js
+function ReactPureComponent(props, context, updater) {
+  // Duplicated from ReactComponent.
+  this.props = props
+  this.context = context
+  this.refs = emptyObject
+  // We initialize the default updater but the real one gets injected by the
+  // renderer.
+  this.updater = updater || ReactNoopUpdateQueue
+}
+```
+
+22-30 行：这个函数看上去应该相当熟悉，他与出现在 24 行的`ReactComponent.js`完全相同，除了名称叫`ReactPureComponent`。实际上，23 行的注意说明了这段代码是从`ReactComponent`模块复制的。
+
+```js
+function ComponentDummy() {}
+ComponentDummy.prototype = ReactComponent.prototype
+ReactPureComponent.prototype = new ComponentDummy()
+ReactPureComponent.prototype.constructor = ReactPureComponent
+// Avoid an extra prototype jump for these methods.
+Object.assign(ReactPureComponent.prototype, ReactComponent.prototype)
+ReactPureComponent.prototype.isPureReactComponent = true
+```
